@@ -43,9 +43,27 @@ async function run() {
       const result = await classCollection.find(query, options).toArray();
       res.send(result)
     })
-    
+    app.get('/allclass', async(req, res)=>{
+      const result = await classCollection.find().toArray();
+      res.send(result)
+    })
 
-   
+    app.put('/classes/:id', async(req, res)=>{
+      const id = req.params.id;
+      const update = req.body;
+      // console.log(update)
+      const filter = {_id: new ObjectId(id)};
+      const options = {upsert: true};
+      const classes = {
+        $set: {
+          status: update.status,
+          enroll: parseFloat(update.enroll),
+          availableSeats: parseFloat(update.availableSeats),
+        }
+      }
+      const result = await classCollection.updateOne(filter, classes, options);
+      res.send(result)
+    });
 
 
     //post my data by email
@@ -55,7 +73,15 @@ async function run() {
       res.send(result)
     })
  
-    
+    //get my data by email
+    app.get('/myclasses', async(req, res)=>{
+      let query = {};
+      if(req.query?.email){
+        query = {email: req.query.email}
+      }
+      const result = await allClassCollection.find(query).toArray();
+      res.send(result)
+    })
 
 
     //instructors
