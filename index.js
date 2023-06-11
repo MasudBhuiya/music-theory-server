@@ -2,6 +2,7 @@ const express = require('express');
 require('dotenv').config();
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const jwt = require('jsonwebtoken');
 const app = express()
 const port = process.env.PORT || 5000;
 
@@ -25,7 +26,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
 
     const classCollection = client.db('summerDb').collection('class');
@@ -33,11 +34,26 @@ async function run() {
     const usersClassCollection = client.db('summerDb').collection('usersclass');
     const usersCollection = client.db('summerDb').collection('users');
 
+    
+
     //users related apis
     app.get('/users', async(req, res)=> {
       const result = await usersCollection.find().toArray();
       res.send(result)
     })
+
+    //-------------
+    app.get('/roleusers', async(req, res)=>{
+      let query = {};
+      if(req.query?.email){
+        query = {email: req.query.email}
+      }
+      const result = await usersCollection.find(query).toArray();
+      res.send(result)
+    })
+    //---------------
+
+
 
     app.post('/users', async(req, res)=>{
       const user = req.body;
@@ -96,11 +112,18 @@ async function run() {
       const result = await classCollection.find(query, options).toArray();
       res.send(result)
     })
+
+    app.post('/class', async(req, res)=>{
+      const usersdata = req.body;
+      console.log(req.body)
+      const result = await classCollection.insertOne(usersdata);
+      res.send(result)
+    });
     
     app.put('/class/:id', async(req, res)=>{
       const id = req.params.id;
       const update = req.body;
-      console.log(update)
+      // console.log(update)
       const filter = {_id: new ObjectId(id)};
       const options = {upsert: true};
       const classes = {
@@ -154,6 +177,42 @@ async function run() {
       const result = await instructorCollection.find().toArray();
       res.send(result)
     })
+
+    app.get('/myaddedclass', async(req, res)=>{
+      let query = {};
+      if(req.query?.email){
+        query = {email: req.query.email}
+      }
+      const result = await classCollection.find(query).toArray();
+      res.send(result)
+    })
+
+    //-----------------------------------------
+    app.get('/instructors/:id', async(req, res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await classCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.put('/instructors/:id', async(req, res)=>{
+      const id = req.params.id;
+      const update  = req.body;
+      const filter = {_id: new ObjectId(id)};
+      const options = {upsert: true};
+      const classes = {
+        $set: {
+          price: update.price,
+          name: update.name,
+          image: update.image,
+          totalSeats: update.totalSeats
+        }
+      }
+      const result = await classCollection.updateOne(filter, classes, options);
+      res.send(result)
+    })
+//-----------------------------
+
 
     app.post('/instructors', async(req, res)=>{
       const usersdata = req.body;
